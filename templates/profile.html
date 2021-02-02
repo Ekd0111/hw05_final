@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Страница пользователя {{ username.get_full_name }}{% endblock %}
+{% block content %}
+<main role="main" class="container">
+        <div class="row">
+                <div class="col-md-3 mb-3 mt-1">                    
+                        <div class="card">
+                                {% include "includes/blok_author.html" %}         
+                        </div>            
+                        <div class="col-md-9">                
+                                {% for post in page %}
+                                <!-- Начало блока с постом --> 
+                                {% include "includes/blok_post.html" %} 
+                                <!-- Конец блока с постом -->  
+                                {% endfor %}
+                                <!-- Здесь постраничная навигация паджинатора -->
+                                {% include "includes/paginator.html" with items=page paginator=paginator%}     
+                        </div>
+                </div>
+        </div>
+</main> 
+{% endblock %}

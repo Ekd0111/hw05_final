@@ -1,0 +1,20 @@
+{% extends "base.html" %} 
+{% block title %}Мои подписки{% endblock %}
+{% load cache %}
+{% block content %}
+    <div class="container">
+        {% include "includes/menu.html" with index=True %}
+           <h1>Мои подписки</h1>
+            <!-- Вывод ленты записей -->
+                {% for post in page %}
+                  <!-- Вот он, новый include! -->
+                    {% include "includes/blok_post.html" with post=post %}
+                {% endfor %}
+        
+    </div>
+
+        <!-- Вывод паджинатора -->
+        {% if page.has_other_pages %}
+            {% include "includes/paginator.html" with items=page paginator=paginator%}
+        {% endif %}
+{% endblock %} 
