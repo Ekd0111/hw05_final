@@ -44,10 +44,6 @@ class CreateFormTests(TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        # Модуль shutil - библиотека Python с прекрасными инструментами
-        # для управления файлами и директориями:
-        # создание, удаление, копирование, перемещение, изменение папок и файло
-        # Метод shutil.rmtree удаляет директорию и всё её содержимое
         shutil.rmtree(settings.MEDIA_ROOT, ignore_errors=True)
         super().tearDownClass()
 
@@ -66,7 +62,8 @@ class CreateFormTests(TestCase):
         )
         self.assertRedirects(response, reverse('index'))
         self.assertEqual(Post.objects.count(), posts_count+1)
-        self.assertTrue(Post.objects.filter(text=self.post.text).exists())
+        self.assertTrue(Post.objects.filter(text=self.post.text,
+                        image=self.post.image).exists())
 
     def test_post_edit(self):
         """При изменении поста через форму post_edit изменяется запись в базе.

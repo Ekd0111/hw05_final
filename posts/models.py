@@ -32,7 +32,12 @@ class Post(models.Model):
     author = models.ForeignKey(User,
                                on_delete=models.CASCADE,
                                related_name='posts')
-    image = models.ImageField(upload_to='posts/', blank=True, null=True)
+    image = models.ImageField(
+        upload_to='posts/',
+        blank=True, null=True,
+        verbose_name='Изображение',
+        help_text='Вы можете добавить изображение к своему посту',
+        )
 
     class Meta:
         ordering = ('-pub_date',)
@@ -79,4 +84,4 @@ class Follow(models.Model):
                                     name='unique_object')]
 
     def __str__(self):
-        return self.author.username
+        return self.author.username, self.user

@@ -19,6 +19,7 @@ class PostModelTest(TestCase):
             'group': 'Группа',
             'text': 'Текст',
             'pub_date': 'Дата публикации',
+            'image': 'Изображение'
         }
         for value, expected in field_verboses.items():
             with self.subTest(value=value):
@@ -28,7 +29,8 @@ class PostModelTest(TestCase):
     def test_help_text(self):
         """help_text в полях совпадает с ожидаемым."""
         field_help_texts = {
-            'text': 'Напишите свои мысли тут:)'
+            'text': 'Напишите свои мысли тут:)',
+            'image': 'Вы можете добавить изображение к своему посту',
         }
         for value, expected in field_help_texts.items():
             with self.subTest(value=value):

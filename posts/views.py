@@ -5,7 +5,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.urls import reverse
 
 from .forms import PostForm, CommentForm
-from .models import Post, Group, Comment, Follow
+from .models import Post, Group, Follow
 
 User = get_user_model()
 POSTS_PER_PAGE = 10
@@ -24,11 +24,11 @@ def index(request):
 def group_posts(request, slug):
     """Страница группы."""
     group = get_object_or_404(Group, slug=slug)
-    posts = Post.objects.filter(group=group).all()
-    paginator = Paginator(posts, POSTS_PER_PAGE)
+    post_list = group.posts.all()
+    paginator = Paginator(post_list, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
-    contex = {'group': group, 'posts': posts,
+    contex = {'group': group,
               'page': page, 'paginator': paginator}
     return render(request, 'group.html', contex)
 
@@ -53,17 +53,11 @@ def profile(request, username):
     paginator = Paginator(post_list, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
-    posts_count = Post.objects.filter(
-        author=author).select_related('author').count()
-    form = CommentForm(request.POST or None)
-    following = False
-    if request.user.is_authenticated:
-        following = Follow.objects.filter(
-            user=request.user,
-            author=author,
-        ).exists()
+    is_following = False
+    is_following = request.user.is_authenticated and Follow.objects.filter(
+       user=request.user, author=author).exists()
     contex = {'author': author, 'page': page, 'paginator': paginator,
-              'posts_count': posts_count, 'form': form, 'following': following}
+              'is_following': is_following}
     return render(request, 'profile.html', contex)
 
 
@@ -71,8 +65,8 @@ def post_view(request, username, post_id):
     """Страница с отдельным постом."""
     post = get_object_or_404(Post, author__username=username,
                              id=post_id)
-    comments = Comment.objects.filter(post=post)
-    form = CommentForm(request.POST or None)
+    comments = post.comments.all()
+    form = CommentForm()
     contex = {'post': post, 'author': post.author,
               'comments': comments, 'form': form}
     return render(request, 'post.html', contex)
@@ -81,21 +75,25 @@ def post_view(request, username, post_id):
 @login_required
 def add_comment(request, username, post_id):
     """Страница с отдельным постом и с формой для комментария."""
-    post = Post.objects.get(pk=post_id)
+    post = get_object_or_404(Post, author__username=username,
+                             id=post_id)
     form = CommentForm(request.POST or None)
-    if request.GET or not form.is_valid():
-        return render(request, 'post.html', {'post': post_id})
-    comment = form.save(commit=False)
-    comment.author = request.user
-    comment.post = post
-    form.save()
-    return redirect(reverse('post', kwargs={'username': username,
-                                            'post_id': post_id}))
+    if form.is_valid():
+        form = form.save(commit=False)
+        form.author = request.user
+        form.post = post
+        form.save()
+    return redirect('post', username, post_id)
 
 
 @login_required
 def post_edit(request, username, post_id):
     """Страница с формой для редактирования поста."""
+    # Если пользователь - не автор, то он не будет видеть кнопку
+    # "редактировать" и, соответсвенно, не сможет перейти на страницу
+    # с формой редактирования.
+    # Таким образом, эта проверка ({% if user == post.author %}) реализована
+    # прямо в шаблоне "blok_post.html".
     post = get_object_or_404(Post, author__username=username, id=post_id)
     form = PostForm(request.POST or None,
                     files=request.FILES or None,
@@ -123,11 +121,9 @@ def follow_index(request):
 @login_required
 def profile_follow(request, username):
     author = get_object_or_404(User, username=username)
-    if (Follow.objects.filter(user=request.user,
-                              author=author).exists() or
-            request.user == author):
-        return profile(request, username)
-    Follow.objects.create(user=request.user, author=author)
+    if author != request.user and not Follow.objects.filter(
+            user=request.user, author=author).exists():
+        Follow.objects.get_or_create(user=request.user, author=author)
     return redirect('profile', username=username)
 
 
@@ -141,11 +137,11 @@ def profile_unfollow(request, username):
 def page_not_found(request, exception=None):
     return render(
         request,
-        "misc/404.html",
-        {"path": request.path},
+        'misc/404.html',
+        {'path': request.path},
         status=404
     )
 
 
 def server_error(request):
-    return render(request, "misc/500.html", status=500)
+    return render(request, 'misc/500.html', status=500)

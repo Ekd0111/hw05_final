@@ -8,7 +8,7 @@ from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from django import forms
 
-from posts.models import Post, Group
+from posts.models import Post, Group, Comment, Follow
 from posts.views import POSTS_PER_PAGE
 
 MEDIA_ROOT = tempfile.mkdtemp()
@@ -178,10 +178,80 @@ class PostPagesTest(TestCase):
         response3 = self.authorized_client.get(reverse('index'))
         self.assertHTMLEqual(str(response), str(response3))
 
+    def test_new_post_follow(self):
+        """Только авторизированный пользователь может комментировать посты."""
+        comments_count = Comment.objects.count()
+        form_data = {'text': 'Текст комментария'}
+        response = self.authorized_client.post(
+            reverse('add_comment', kwargs={'username': self.user.username,
+                                           'post_id': self.post.id}),
+            data=form_data,
+            follow=True)
+        self.assertEqual(self.post.comments.count(), comments_count + 1)
+
+    def test_authorized_user_follow_to_other_user(self):
+        """Тестирование подписки на пользователей."""
+        User = get_user_model()
+        user_follower = User.objects.create(username='Подписчик')
+        user_author = User.objects.create(username='Автор')
+        response = self.authorized_client.post(
+            reverse('profile_follow', kwargs={'username': user_author}))
+        self.assertFalse(Follow.objects.filter(
+            user=user_follower,
+            author=user_author).exists())
+
+    def test_authorized_client_unfollow(self):
+        """Тестирование отписки от пользователей."""
+        User = get_user_model()
+        user_follower = User.objects.create(username='Подписчик')
+        user_author = User.objects.create(username='Автор')
+        Follow.objects.create(
+            user=user_follower,
+            author=user_author)
+        self.authorized_client.post(
+            reverse('profile_unfollow', kwargs={'username': user_author}))
+        self.assertTrue(Follow.objects.filter(
+            user=user_follower,
+            author=user_author
+        ).exists())
+
     def test_new_post_not_appear_not_follower(self):
         """Новая запись не появится в ленте не подписчика."""
-        response = self.authorized_client.get(reverse('follow_index'))
-        self.assertFalse(response.context['page'])
+        User = get_user_model()
+        user_follower = User.objects.create(username='Подписчик')
+        user_author = User.objects.create(username='Автор')
+        Follow.objects.create(
+            user=user_follower,
+            author=user_author,
+        )
+        post = Post.objects.create(
+            text='Пост из подписки',
+            author=user_author,
+        )
+        response = self.authorized_client.post(
+            reverse('follow_index')
+        )
+        self.assertNotIn(post, response.context['page'])
+
+    def test_new_post_appear_follower(self):
+        """Новая запись появится в ленте подписчика."""
+        User = get_user_model()
+        user_follower = User.objects.create(username='Подписчик')
+        user_author = User.objects.create(username='Автор')
+        authorized_client_follower = Client()
+        authorized_client_follower.force_login(user_follower)
+        Follow.objects.create(
+            user=user_follower,
+            author=user_author,
+        )
+        post = Post.objects.create(
+            text='Пост из подписки',
+            author=user_author,
+        )
+        response = authorized_client_follower.get(
+            reverse('follow_index')
+        )
+        self.assertIn(post, response.context['page'])
 
 
 class PaginatorViewsTest(TestCase):

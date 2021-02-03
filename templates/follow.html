@@ -7,7 +7,6 @@
            <h1>Мои подписки</h1>
             <!-- Вывод ленты записей -->
                 {% for post in page %}
-                  <!-- Вот он, новый include! -->
                     {% include "includes/blok_post.html" with post=post %}
                 {% endfor %}
         
