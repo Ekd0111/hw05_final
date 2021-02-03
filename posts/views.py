@@ -2,7 +2,6 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.shortcuts import render, get_object_or_404, redirect
-from django.urls import reverse
 
 from .forms import PostForm, CommentForm
 from .models import Post, Group, Follow
@@ -55,7 +54,8 @@ def profile(request, username):
     page = paginator.get_page(page_number)
     is_following = False
     is_following = request.user.is_authenticated and Follow.objects.filter(
-       user=request.user, author=author).exists()
+        user=request.user, author=author
+        ).exists()
     contex = {'author': author, 'page': page, 'paginator': paginator,
               'is_following': is_following}
     return render(request, 'profile.html', contex)

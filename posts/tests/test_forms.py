@@ -61,7 +61,7 @@ class CreateFormTests(TestCase):
             follow=True,
         )
         self.assertRedirects(response, reverse('index'))
-        self.assertEqual(Post.objects.count(), posts_count+1)
+        self.assertEqual(Post.objects.count(), posts_count + 1)
         self.assertTrue(Post.objects.filter(text=self.post.text,
                         image=self.post.image).exists())
 

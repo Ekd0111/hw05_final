@@ -36,8 +36,7 @@ class Post(models.Model):
         upload_to='posts/',
         blank=True, null=True,
         verbose_name='Изображение',
-        help_text='Вы можете добавить изображение к своему посту',
-        )
+        help_text='Вы можете добавить изображение к своему посту')
 
     class Meta:
         ordering = ('-pub_date',)

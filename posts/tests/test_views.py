@@ -170,8 +170,7 @@ class PostPagesTest(TestCase):
         Post.objects.create(
             author=self.post.author,
             group=self.group,
-            text='test_text',
-            )
+            text='test_text')
         response2 = self.authorized_client.get(reverse('index'))
         self.assertHTMLEqual(str(response), str(response2))
         cache.clear()
@@ -182,7 +181,7 @@ class PostPagesTest(TestCase):
         """Только авторизированный пользователь может комментировать посты."""
         comments_count = Comment.objects.count()
         form_data = {'text': 'Текст комментария'}
-        response = self.authorized_client.post(
+        self.authorized_client.post(
             reverse('add_comment', kwargs={'username': self.user.username,
                                            'post_id': self.post.id}),
             data=form_data,
@@ -194,7 +193,7 @@ class PostPagesTest(TestCase):
         User = get_user_model()
         user_follower = User.objects.create(username='Подписчик')
         user_author = User.objects.create(username='Автор')
-        response = self.authorized_client.post(
+        self.authorized_client.post(
             reverse('profile_follow', kwargs={'username': user_author}))
         self.assertFalse(Follow.objects.filter(
             user=user_follower,

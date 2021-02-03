@@ -105,7 +105,7 @@ class URLTests(TestCase):
             '/new/': 'new.html',
             f'/{self.post.author.username}/': 'profile.html',
             f'/{self.post.author.username}/{self.post.id}/': 'post.html',
-            }
+        }
         for url, template in templates_url_names.items():
             with self.subTest(url=url):
                 response = self.authorized_client_author.get(url)
