@@ -87,7 +87,7 @@ class URLTests(TestCase):
             '/new/': 200,
             f'/{self.post.author.username}/': 200,
             f'/{self.post.author.username}/{self.post.id}/': 200,
-            f'/{self.post.author.username}/{self.post.id}/edit/': 200,
+            f'/{self.post.author.username}/{self.post.id}/edit/': 302,
         }
         for adress, code in url_adresses.items():
             with self.subTest(url=adress):

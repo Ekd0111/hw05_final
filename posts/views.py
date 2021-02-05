@@ -88,21 +88,21 @@ def add_comment(request, username, post_id):
 @login_required
 def post_edit(request, username, post_id):
     """Страница с формой для редактирования поста."""
-    # Да, согласна.
-    # А тогда @login_required не достаточно?
-    # Я проверила, по ссылке не даёт открыть post_edit,
-    # редиректит на страницу логина..
-    post = get_object_or_404(Post, author__username=username, id=post_id)
-    form = PostForm(request.POST or None,
-                    files=request.FILES or None,
-                    instance=post)
-    if form.is_valid():
-        form.save()
+    author = get_object_or_404(User, username=username)
+    if author != request.user:
         return redirect('post', username, post_id)
-    return render(request, 'new.html', {
-        'form': form,
-        'post': post,
-        'is_edit': True, })
+    else:
+        post = get_object_or_404(Post, author__username=username, id=post_id)
+        form = PostForm(request.POST or None,
+                        files=request.FILES or None,
+                        instance=post)
+        if form.is_valid():
+            form.save()
+            return redirect('post', username, post_id)
+        return render(request, 'new.html', {
+            'form': form,
+            'post': post,
+            'is_edit': True, })
 
 
 @login_required

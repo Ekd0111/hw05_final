@@ -179,7 +179,7 @@ class PostPagesTest(TestCase):
         self.assertHTMLEqual(str(response), str(response3))
 
     def test_authorized_user_add_comment(self):
-        """Только авторизированный пользователь может комментировать посты."""
+        """Авторизированный пользователь может комментировать посты."""
         comments_count = Comment.objects.count()
         form_data = {'text': 'Текст комментария'}
         self.authorized_client.post(
@@ -188,13 +188,18 @@ class PostPagesTest(TestCase):
             data=form_data,
             follow=True)
         self.assertEqual(self.post.comments.count(), comments_count + 1)
-        self.assertTrue(Post.objects.filter(id=self.post.id).exists())
+        self.assertTrue(Comment.objects.filter(id=self.post.id).exists())
 
+    def test_not_authorized_user_add_comment(self):
+        """Неавторизированный пользователь не может комментировать посты."""
+        comments_count = Comment.objects.count()
+        form_data = {'text': 'Текст комментария'}
         response = self.guest_client.post(
             reverse('add_comment', kwargs={'username': self.user.username,
                                            'post_id': self.post.id}),
             data=form_data,
             follow=True)
+        self.assertEqual(self.post.comments.count(), comments_count)
         self.assertRedirects(
             response, ('/auth/login/?next=/Test_user/1/comment/'))
 
