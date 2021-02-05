@@ -52,7 +52,6 @@ def profile(request, username):
     paginator = Paginator(post_list, POSTS_PER_PAGE)
     page_number = request.GET.get('page')
     page = paginator.get_page(page_number)
-    is_following = False
     is_following = request.user.is_authenticated and Follow.objects.filter(
         user=request.user, author=author
     ).exists()
@@ -89,11 +88,10 @@ def add_comment(request, username, post_id):
 @login_required
 def post_edit(request, username, post_id):
     """Страница с формой для редактирования поста."""
-    # Если пользователь - не автор, то он не будет видеть кнопку
-    # "редактировать" и, соответсвенно, не сможет перейти на страницу
-    # с формой редактирования.
-    # Таким образом, эта проверка ({% if user == post.author %}) реализована
-    # прямо в шаблоне "blok_post.html".
+    # Да, согласна.
+    # А тогда @login_required не достаточно?
+    # Я проверила, по ссылке не даёт открыть post_edit,
+    # редиректит на страницу логина..
     post = get_object_or_404(Post, author__username=username, id=post_id)
     form = PostForm(request.POST or None,
                     files=request.FILES or None,

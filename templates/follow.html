@@ -3,7 +3,7 @@
 {% load cache %}
 {% block content %}
     <div class="container">
-        {% include "includes/menu.html" with index=True %}
+        {% include "includes/menu.html" with follow=True %}
            <h1>Мои подписки</h1>
             <!-- Вывод ленты записей -->
                 {% for post in page %}

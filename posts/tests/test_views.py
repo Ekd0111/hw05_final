@@ -56,6 +56,7 @@ class PostPagesTest(TestCase):
 
     def setUp(self):
         super().setUp()
+        self.guest_client = Client()
         self.authorized_client = Client()
         self.authorized_client.force_login(self.user)
 
@@ -177,7 +178,7 @@ class PostPagesTest(TestCase):
         response3 = self.authorized_client.get(reverse('index'))
         self.assertHTMLEqual(str(response), str(response3))
 
-    def test_new_post_follow(self):
+    def test_authorized_user_add_comment(self):
         """Только авторизированный пользователь может комментировать посты."""
         comments_count = Comment.objects.count()
         form_data = {'text': 'Текст комментария'}
@@ -187,70 +188,79 @@ class PostPagesTest(TestCase):
             data=form_data,
             follow=True)
         self.assertEqual(self.post.comments.count(), comments_count + 1)
+        self.assertTrue(Post.objects.filter(id=self.post.id).exists())
+
+        response = self.guest_client.post(
+            reverse('add_comment', kwargs={'username': self.user.username,
+                                           'post_id': self.post.id}),
+            data=form_data,
+            follow=True)
+        self.assertRedirects(
+            response, ('/auth/login/?next=/Test_user/1/comment/'))
+
+
+class FollowPagesTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        User = get_user_model()
+        cls.user = User.objects.create(username='Не подписчик')
+        cls.user_follower = User.objects.create(username='Подписчик')
+        cls.user_author = User.objects.create(username='Автор')
+        cls.post = Post.objects.create(
+            text='Пост из подписки',
+            author=cls.user_author,
+        )
+
+    def setUp(self):
+        super().setUp()
+        self.authorized_client = Client()
+        self.authorized_client.force_login(self.user)
+        self.authorized_client_follower = Client()
+        self.authorized_client_follower.force_login(self.user_follower)
 
     def test_authorized_user_follow_to_other_user(self):
         """Тестирование подписки на пользователей."""
-        User = get_user_model()
-        user_follower = User.objects.create(username='Подписчик')
-        user_author = User.objects.create(username='Автор')
-        self.authorized_client.post(
-            reverse('profile_follow', kwargs={'username': user_author}))
-        self.assertFalse(Follow.objects.filter(
-            user=user_follower,
-            author=user_author).exists())
+        follow_count = Follow.objects.count()
+        self.authorized_client_follower.get(
+            reverse('profile_follow', kwargs={'username': self.user_author}))
+        self.assertEqual(Follow.objects.count(), follow_count + 1)
+        self.assertTrue(Follow.objects.filter(
+            user=self.user_follower, author=self.user_author).exists())
 
     def test_authorized_client_unfollow(self):
         """Тестирование отписки от пользователей."""
-        User = get_user_model()
-        user_follower = User.objects.create(username='Подписчик')
-        user_author = User.objects.create(username='Автор')
         Follow.objects.create(
-            user=user_follower,
-            author=user_author)
-        self.authorized_client.post(
-            reverse('profile_unfollow', kwargs={'username': user_author}))
-        self.assertTrue(Follow.objects.filter(
-            user=user_follower,
-            author=user_author
-        ).exists())
+            user=self.user_follower,
+            author=self.user_author)
+        follow_count = Follow.objects.count()
+        self.authorized_client_follower.get(
+            reverse('profile_unfollow', kwargs={'username': self.user_author}))
+        self.assertEqual(Follow.objects.count(), follow_count - 1)
+        self.assertFalse(Follow.objects.filter(
+            user=self.user_follower, author=self.user_author).exists())
 
     def test_new_post_not_appear_not_follower(self):
         """Новая запись не появится в ленте не подписчика."""
-        User = get_user_model()
-        user_follower = User.objects.create(username='Подписчик')
-        user_author = User.objects.create(username='Автор')
         Follow.objects.create(
-            user=user_follower,
-            author=user_author,
-        )
-        post = Post.objects.create(
-            text='Пост из подписки',
-            author=user_author,
+            user=self.user_follower,
+            author=self.user_author,
         )
         response = self.authorized_client.post(
             reverse('follow_index')
         )
-        self.assertNotIn(post, response.context['page'])
+        self.assertNotIn(self.post, response.context['page'])
 
     def test_new_post_appear_follower(self):
         """Новая запись появится в ленте подписчика."""
-        User = get_user_model()
-        user_follower = User.objects.create(username='Подписчик')
-        user_author = User.objects.create(username='Автор')
-        authorized_client_follower = Client()
-        authorized_client_follower.force_login(user_follower)
         Follow.objects.create(
-            user=user_follower,
-            author=user_author,
+            user=self.user_follower,
+            author=self.user_author,
         )
-        post = Post.objects.create(
-            text='Пост из подписки',
-            author=user_author,
-        )
-        response = authorized_client_follower.get(
+        response = self.authorized_client_follower.get(
             reverse('follow_index')
         )
-        self.assertIn(post, response.context['page'])
+        self.assertIn(self.post, response.context['page'])
 
 
 class PaginatorViewsTest(TestCase):

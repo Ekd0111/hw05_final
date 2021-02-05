@@ -83,4 +83,4 @@ class Follow(models.Model):
                                     name='unique_object')]
 
     def __str__(self):
-        return self.author.username, self.user
+        return f'{self.user} -> {self.author.username}'
